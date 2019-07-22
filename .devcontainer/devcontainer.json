@@ -1,0 +1,42 @@
+// See https://aka.ms/vscode-remote/devcontainer.json for format details.
+{
+  "name": "Python 3",
+  "context": "..",
+  "dockerFile": "Dockerfile",
+  "extensions": [
+    // Language
+    "ms-python.python",
+    // Auto-completion
+    "visualstudioexptteam.vscodeintellicode",
+    "christian-kohler.path-intellisense",
+    // Formatting
+    "editorconfig.editorconfig",
+    "esbenp.prettier-vscode",
+    // Visualization
+    "shardulm94.trailing-spaces",
+    "coenraads.bracket-pair-colorizer-2",
+    "oderwat.indent-rainbow",
+    "mechatroner.rainbow-csv",
+    // Git
+    "eamodio.gitlens",
+    "mhutchie.git-graph",
+    // Markdown
+    "davidanson.vscode-markdownlint",
+    "yzhang.markdown-all-in-one",
+    // UML
+    "jebbs.plantuml",
+    // Tool
+    "gruntfuggly.todo-tree",
+    "alefragnani.bookmarks"
+  ],
+  "settings": {
+    "python.pythonPath": "/usr/local/bin/python",
+    "python.linting.enabled": true,
+    "python.linting.flake8Enabled": true,
+    "python.linting.flake8Args": ["--max-line-length", "88"],
+    "python.linting.mypyEnabled": true,
+    "python.formatting.provider": "black",
+    "editor.formatOnSave": true
+  },
+  "postCreateCommand": "poetry install"
+}
