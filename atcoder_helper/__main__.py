@@ -4,6 +4,7 @@ import argparse
 import logging
 
 import atcoder_helper.command.gen
+from atcoder_helper import __version__
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -23,6 +24,7 @@ def main() -> None:
 
     parser = argparse.ArgumentParser()
     parser.add_argument("command", type=str, choices=choices, help="command")
+    parser.add_argument("--version", action="version", version=f"{__version__}")
     ns, args = parser.parse_known_args()
 
     sub_main = getattr(atcoder_helper.command, ns.command).main
