@@ -11,14 +11,14 @@ Simple CLI helper tool for AtCoder
 ## Usage
 
 ```sh
-atcoder-helper [-h] [--contests-dir CONTESTS_DIR] [--template-file TEMPLATE_FILE] contest_id
+atcoder-helper gen [--contests-dir CONTESTS_DIR] [--template-file TEMPLATE_FILE] contest_id [alphabets [alphabets ...]]
 ```
 
 ## Example
 
 ```sh
 vim template.cpp
-atcoder-helper gen --template-file template.cpp abc001
+atcoder-helper gen --template-file template.cpp abc001 A B
 cd contests/abc001/A
 vim main.cpp
 ```

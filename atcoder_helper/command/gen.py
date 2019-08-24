@@ -23,7 +23,7 @@ class Task:
     alphabet: str
 
 
-def get_tasks(contest_id: str) -> Optional[List[Task]]:
+def get_tasks(contest_id: str, alphabets: List[str]) -> Optional[List[Task]]:
     base_url = "https://atcoder.jp"
     tasks_url = base_url + f"/contests/{contest_id}/tasks"
 
@@ -59,6 +59,10 @@ def get_tasks(contest_id: str) -> Optional[List[Task]]:
         if not re.match(r"[A-Z]", alphabet):
             continue
 
+        if alphabets:
+            if alphabet not in alphabets:
+                continue
+
         tasks.append(Task(contest_id, task_id, task_url, alphabet))
 
     if not tasks:
@@ -87,12 +91,13 @@ def copy_template_file(task_dir: Path, template_file: Path) -> None:
 
 def main(args: List[str]) -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("contest_id")
+    parser.add_argument("contest_id", type=str)
+    parser.add_argument("alphabets", type=str, nargs="*", default=[])
     parser.add_argument("--contests-dir", type=Path, default=Path("./contests"))
     parser.add_argument("--template-file", type=Path)
     ns = parser.parse_args(args)
 
-    tasks = get_tasks(ns.contest_id)
+    tasks = get_tasks(ns.contest_id, ns.alphabets)
     if not tasks:
         logger.error(f"do nothing because no task was found")
         sys.exit(1)
