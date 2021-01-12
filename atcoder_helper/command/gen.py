@@ -6,13 +6,15 @@ import shutil
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import List, Optional
 
 import requests
+from argcomplete.completers import DirectoriesCompleter, FilesCompleter
 from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+atcoder_base_url = "https://atcoder.jp"
 
 
 @dataclass(frozen=True)
@@ -23,37 +25,38 @@ class Task:
     alphabet: str
 
 
-def get_tasks(contest_id: str, alphabets: List[str]) -> Optional[List[Task]]:
-    base_url = "https://atcoder.jp"
-    tasks_url = base_url + f"/contests/{contest_id}/tasks"
-
+def get_page(url):
     try:
-        response = requests.get(tasks_url)
+        response = requests.get(url)
     except ConnectionError as e:
         logger.error(e)
-        return None
+        sys.exit(1)
     except Exception as e:
         logger.error(e)
-        return None
+        sys.exit(1)
 
     if response.status_code != requests.codes.ok:
-        logger.error(f"statuc_code was {response.status_code}")
-        logger.info(f"please confirm url: {tasks_url}")
-        return None
+        logger.error(f"statuc_code was {response.status_code}, please confirm url: {url}")
+        sys.exit(1)
 
-    soup = BeautifulSoup(response.text, "html.parser")
-    tbody = soup.find("tbody")
+    return BeautifulSoup(response.text, "html.parser")
 
+
+def get_tasks(contest_id: str, alphabets: list[str] = None) -> list[Task]:
+    page = get_page(f"{atcoder_base_url}/contests/{contest_id}/tasks")
+
+    tbody = page.find("tbody")
     if not tbody:
         logger.error("no tbody found")
-        return None
+        sys.exit(1)
 
     tasks = []
     for tr in tbody.find_all("tr"):
         tds = tr.find_all("td")
-
         alphabet = tds[0].text
-        task_url = base_url + tds[1].find("a").attrs["href"]
+        task_path = tds[1].find("a").attrs["href"]
+
+        task_url = f"{atcoder_base_url}{task_path}"
         task_id = Path(task_url).name
 
         if not re.match(r"[A-Z]", alphabet):
@@ -67,7 +70,7 @@ def get_tasks(contest_id: str, alphabets: List[str]) -> Optional[List[Task]]:
 
     if not tasks:
         logger.error("no task found")
-        return None
+        sys.exit(1)
 
     return tasks
 
@@ -89,27 +92,52 @@ def copy_template_file(task_dir: Path, template_file: Path) -> None:
         logger.info(f"template file already exists and was not copied: {target}")
 
 
-def main(args: List[str]) -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("contest_id", type=str)
-    parser.add_argument("alphabets", type=str, nargs="*", default=[])
-    parser.add_argument("--contests-dir", type=Path, default=Path("./contests"))
-    parser.add_argument("--template-file", type=Path)
-    ns = parser.parse_args(args)
+def get_recent_contest_ids(prefix: str, parsed_args, **kwargs):
+    get_params_dict = {}
+    if prefix.startswith("abc"):
+        get_params_dict["ratedType"] = 1
+    if prefix.startswith("arc"):
+        get_params_dict["ratedType"] = 2
+    if prefix.startswith("agc"):
+        get_params_dict["ratedType"] = 3
 
-    tasks = get_tasks(ns.contest_id, ns.alphabets)
+    get_params = "&".join([f"{k}={v}" for k, v in get_params_dict.items()])
+
+    page = get_page(f"{atcoder_base_url}/contests/archive?{get_params}")
+    tbody = page.find("tbody")
+
+    contest_ids = []
+    for tr in tbody.find_all("tr"):
+        tds = tr.find_all("td")
+        contest_id = tds[1].find("a").attrs["href"].replace("/contests/", "")
+        contest_ids.append(contest_id)
+
+    return contest_ids
+
+
+def get_alphabets_in_contest(prefix: str, parsed_args, **kwargs):
+    tasks = get_tasks(parsed_args.contest_id)
+    all_alphabets = [task.alphabet for task in tasks]
+    return [alphabet for alphabet in all_alphabets if alphabet not in parsed_args.alphabets]
+
+
+def add_arguments(subparser):
+    subparser.add_argument("contest_id", type=str).completer = get_recent_contest_ids
+    subparser.add_argument("alphabets", type=str, nargs="*", default=[]).completer = get_alphabets_in_contest
+    subparser.add_argument("--contests-dir", type=Path, default=Path("./contests")).completer = DirectoriesCompleter()
+    subparser.add_argument("--template-file", type=Path).completer = FilesCompleter()
+
+
+def main(args):
+    tasks = get_tasks(args.contest_id, args.alphabets)
     if not tasks:
         logger.error(f"do nothing because no task was found")
         sys.exit(1)
 
     for task in tasks:
-        task_dir = ns.contests_dir / task.contest_id / task.alphabet
+        task_dir = args.contests_dir / task.contest_id / task.alphabet
 
         generate_task_dir(task, task_dir)
 
-        if ns.template_file and ns.template_file.exists():
-            copy_template_file(task_dir, ns.template_file)
-
-
-if __name__ == "__main__":
-    main(sys.argv[1:])
+        if args.template_file and args.template_file.exists():
+            copy_template_file(task_dir, args.template_file)

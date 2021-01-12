@@ -3,11 +3,23 @@
 import argparse
 import logging
 
+import argcomplete
+import pkg_resources
+
 import atcoder_helper.command.gen
-from atcoder_helper import __version__
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+version = pkg_resources.get_distribution("atcoder-helper").version
+
+
+def get_sub_commands():
+    return [v for v in vars(atcoder_helper.command) if not v.startswith("_")]
+
+
+def get_sub_command_module(sub_command):
+    return getattr(atcoder_helper.command, sub_command)
 
 
 def main() -> None:
@@ -15,20 +27,23 @@ def main() -> None:
     stream_handler.setLevel(logging.INFO)
 
     logging.basicConfig(
-        handlers=[stream_handler],
-        format="%(name)s %(levelname)s: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
+        handlers=[stream_handler], format="%(name)s %(levelname)s: %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
     )
 
-    choices = [v for v in vars(atcoder_helper.command) if not v.startswith("_")]
-
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", type=str, choices=choices, help="command")
-    parser.add_argument("--version", action="version", version=f"{__version__}")
-    ns, args = parser.parse_known_args()
+    parser.add_argument("--version", action="version", version=f"%(prog)s {version}")
 
-    sub_main = getattr(atcoder_helper.command, ns.command).main
-    sub_main(args)
+    subparsers = parser.add_subparsers(dest="command")
+    for sub_command in get_sub_commands():
+        sub_command_module = get_sub_command_module(sub_command)
+        sub_command_module.add_arguments(subparsers.add_parser(sub_command))
+
+    argcomplete.autocomplete(parser, exclude=["-h", "--help", "--version"])
+
+    args = parser.parse_args()
+
+    sub_command_module = get_sub_command_module(args.command)
+    sub_command_module.main(args)
 
 
 if __name__ == "__main__":
