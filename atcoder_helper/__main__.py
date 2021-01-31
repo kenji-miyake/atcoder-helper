@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 
 import argparse
-import logging
+from logging import StreamHandler, basicConfig, getLogger
 
 import argcomplete
 import pkg_resources
 
 import atcoder_helper.command.gen
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger = getLogger(__name__)
+logger.setLevel("DEBUG")
 
 version = pkg_resources.get_distribution("atcoder-helper").version
 
@@ -23,12 +23,9 @@ def get_sub_command_module(sub_command):
 
 
 def main() -> None:
-    stream_handler = logging.StreamHandler()
-    stream_handler.setLevel(logging.INFO)
-
-    logging.basicConfig(
-        handlers=[stream_handler], format="%(name)s %(levelname)s: %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
-    )
+    handler = StreamHandler()
+    handler.setLevel("INFO")
+    basicConfig(handlers=[handler])
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--version", action="version", version=f"%(prog)s {version}")

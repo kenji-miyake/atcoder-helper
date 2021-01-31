@@ -1,18 +1,18 @@
 import argparse
 import json
-import logging
 import re
 import shutil
 import sys
 from dataclasses import asdict, dataclass
+from logging import getLogger
 from pathlib import Path
 
 import requests
 from argcomplete.completers import DirectoriesCompleter, FilesCompleter
 from bs4 import BeautifulSoup
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger = getLogger(__name__)
+logger.setLevel("DEBUG")
 
 atcoder_base_url = "https://atcoder.jp"
 
